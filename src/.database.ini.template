@@ -1,0 +1,11 @@
+[postgresql]
+user="dbusername"
+password="dbpassword"
+host=hosturl
+port=5432
+database=dbname
+sslrootcert=/path/to/root.crt
+
+[ipfs]
+endpoint="url of ipfs node"
+port=5001
