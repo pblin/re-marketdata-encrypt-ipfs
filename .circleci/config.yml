@@ -24,16 +24,15 @@ jobs:
             sudo add-apt-repository --yes ppa:deadsnakes/ppa
             sudo apt-get update
             sudo apt-get install python3.7
-            wget https://bootstrap.pypa.io/get-pip.py
-            sudo python3.7 get-pip.py
+            sudo apt-get -y install python3-pip
             sudo python3.7 -m pip install --upgrade pip setuptools wheel
             sudo python3.7 -m pip install pipenv
-            cd src && python3.6 -m pip install --no-cache-dir -r requirements.txt
+            cd src && python3.7 -m pip install --no-cache-dir -r requirements.txt
       - run:
           name: Run Tests
           command: |
             . flaskapi/bin/activate
-            cd src && scp mvp@demo-app.rebloc.io:/home/mvp/webapp/server/.database.ini . && python3.6 test_app.py
+            cd src && scp mvp@demo-app.rebloc.io:/home/mvp/webapp/server/.database.ini . && python3.7 test_app.py
 
   deploy:
     machine: true
