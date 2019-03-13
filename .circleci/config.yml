@@ -6,8 +6,9 @@
 version: 2
 jobs:
   build-and-test:
-    machine: true
+    machine: 
       docker_layer_caching: true
+      image: circleci/classic:latest
 
     working_directory: ~/app
     steps:
