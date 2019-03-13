@@ -1,0 +1,59 @@
+
+# Javascript Node CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-javascript/ for more details
+#
+version: 2
+jobs:
+  build-and-test:
+    docker:
+      - image: circleci/python:3.7.2
+      environment:
+          FLASK_CONFIG: testing
+    working_directory: ~/app
+    steps:
+      - checkout
+      - run:
+          name: Setup VirtualEnv
+          command: |
+            echo 'export TAG=0.1.${CIRCLE_BUILD_NUM}' >> $BASH_ENV
+            echo 'export IMAGE_NAME=python-circleci-docker' >> $BASH_ENV 
+            virtualenv flaskapi
+            . flaskapi/bin/activate
+            pip3 install --no-cache-dir -r requirements.txt
+        - run:
+          name: Run Tests
+          command: |
+            . flaskapi/bin/activate
+            python test_app.py
+        - setup_remote_docker:
+            docker_layer_caching: true
+        - run:
+          name: Build and push Docker image
+          command: |
+            . flaskapi/bin/activate
+            pyinstaller -F app.py
+            docker build -t bernardlin/flaskapi:beta .
+            echo $DOCKER_PWD | docker login -u $DOCKER_LOGIN --password-stdin
+            docker push bernardlin/flaskapi:beta
+  deploy:
+    machine: true
+    production:
+    branch: master
+    steps:
+      - checkout
+      - run:
+          name: push file to server 
+          command: |
+#            rsh  mvp@demo-app.rebloc.io "if [ ! -d 'webapp' ]; then mkdir -p webapp; fi"
+#            scp -r ./* mvp@demo-app.rebloc.io:/home/mvp/webapp/server/flask
+            rsh mvp@demo-app.rebloc.io "cd src && docker pull bernardlin:flaskapi:beta & bash run_api_docker.sh bernardlin:flaskapi:beta"
+
+workflows:
+  version: 2
+  build-test-and-deploy:
+    jobs:
+      - build-and-test
+      - deploy:
+          requires:
+            - build-and-test
