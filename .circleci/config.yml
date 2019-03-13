@@ -20,14 +20,21 @@ jobs:
             virtualenv flaskapi
             . flaskapi/bin/activate
             pip3 install --no-cache-dir -r requirements.txt
-        - run:
+      - run:
           name: Run Tests
           command: |
             . flaskapi/bin/activate
             python test_app.py
-        - setup_remote_docker:
-            docker_layer_caching: true
-        - run:
+  
+  deploy:
+    machine: true
+    production:
+    branch: master
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - run:
           name: Build and push Docker image
           command: |
             . flaskapi/bin/activate
@@ -35,12 +42,6 @@ jobs:
             docker build -t bernardlin/flaskapi:beta .
             echo $DOCKER_PWD | docker login -u $DOCKER_LOGIN --password-stdin
             docker push bernardlin/flaskapi:beta
-  deploy:
-    machine: true
-    production:
-    branch: master
-    steps:
-      - checkout
       - run:
           name: push file to server 
           command: |
