@@ -43,10 +43,10 @@ jobs:
             echo $DOCKER_PWD | docker login -u $DOCKER_LOGIN --password-stdin
             docker push bernardlin/flaskapi:beta
       - run:
-          name: push file to server 
+          name: start up docker
           command: |
-#            rsh  mvp@demo-app.rebloc.io "if [ ! -d 'webapp' ]; then mkdir -p webapp; fi"
-#            scp -r ./* mvp@demo-app.rebloc.io:/home/mvp/webapp/server/flask
+            # rsh  mvp@demo-app.rebloc.io "if [ ! -d 'webapp' ]; then mkdir -p webapp; fi"
+            # scp -r ./* mvp@demo-app.rebloc.io:/home/mvp/webapp/server/flask
             rsh mvp@demo-app.rebloc.io "cd src && docker pull bernardlin:flaskapi:beta & bash run_api_docker.sh bernardlin:flaskapi:beta"
 
 workflows:
