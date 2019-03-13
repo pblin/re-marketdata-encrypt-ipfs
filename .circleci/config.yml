@@ -17,7 +17,7 @@ jobs:
           name: Setup VirtualEnv
           command: |
             sudo bash -c "yes | sudo apt-get update && sudo apt-get install software-properties-common && add-apt-repository ppa:deadsnakes/ppa && apt-get update && apt-get install -y python3.7"
-            python --version
+            sudo apt-get install -y python3-pip
             cd src && pip3 install --no-cache-dir -r requirements.txt
       - run:
           name: Run Tests
