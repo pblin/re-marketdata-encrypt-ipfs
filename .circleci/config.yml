@@ -6,7 +6,7 @@
 version: 2
 jobs:
   build-and-test:
-    machine:
+    machine: true
       docker_layer_caching: true
       image: circleci/classic:latest
 
@@ -16,7 +16,9 @@ jobs:
       - run:
           name: Setup VirtualEnv
           command: |
+            curl -s https://packagecloud.io/install/repositories/circleci/trusty/script.deb.sh | sudo bash
             circleci-install python 3.7.2
+            sudo -H -i -u ${CIRCLECI_USER} pyenv global 3.7.2
             virtualenv flaskapi
             . flaskapi/bin/activate
             cd src && pip3 install --no-cache-dir -r requirements.txt
