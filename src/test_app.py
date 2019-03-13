@@ -9,14 +9,7 @@ class TestHelloWorld(unittest.TestCase):
         self.app.testing = True
 
     def test_status_code(self):
-        response = self.app.get('/sample/nyc_lot/test123')
-        self.assertEqual(response.status_code, 200)
-
-    def test_message(self):
-        response = self.app.get('/sample/nyc_lot/test123')
-
-        assert b'error' not in response.data
-
+        assert self.app.get('/sample/nyc_lot/test123').status_code == 200
 
 if __name__ == '__main__':
     unittest.main()
