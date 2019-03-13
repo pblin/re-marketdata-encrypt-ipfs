@@ -17,7 +17,8 @@ jobs:
           name: Setup VirtualEnv
           command: |
             curl -s https://packagecloud.io/install/repositories/circleci/trusty/script.deb.sh | sudo bash
-            circleci-install python 3.7.2
+            sudo circleci-install python 3.7.2
+            python --verson
             sudo -H -i -u ${CIRCLECI_USER} pyenv global 3.7.2
             cd src && pip3 install --no-cache-dir -r requirements.txt
       - run:
