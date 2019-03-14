@@ -34,8 +34,6 @@ jobs:
     branch: master
     steps:
       - checkout
-      - setup_remote_docker:
-          docker_layer_caching: true
       - run:
           name: Build and push Docker image
           command: |
