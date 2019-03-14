@@ -17,12 +17,12 @@ jobs:
           name: install ubuntu build reqs
           command: |
             sudo apt-get update && sudo apt upgrade -y
-            sudo apt-get install build-essential libssl-dev zlib1g-dev libncurses5-dev libncursesw5-dev libreadline-dev libsqlite3-dev libgdbm-dev libdb5.3-dev libbz2-dev libexpat1-dev liblzma-dev tk-dev libffi-dev
+            sudo apt-get install libreadline-gplv2-dev libncursesw5-dev libssl-dev libsqlite3-dev tk-dev libgdbm-dev libc6-dev libbz2-dev
       - run:
           name: install python 3.7
           command: |
             sudo add-apt-repository --yes ppa:deadsnakes/ppa
-            sudo apt-get update
+            sudo apt-get update -y
             sudo apt-get install -y python3.7
             curl https://bootstrap.pypa.io/get-pip.py | sudo -H python3.7 
             sudo python3.7 -m pip install
