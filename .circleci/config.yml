@@ -48,7 +48,7 @@ jobs:
           command: |
             rsh  mvp@demo-app.rebloc.io "if [ ! -d 'webapp/server/flask' ]; then mkdir -p webapp/server/flask; fi"
             scp ./src/run_api_docker.sh mvp@demo-app.rebloc.io:/home/mvp/webapp/server/flask
-            rsh mvp@demo-app.rebloc.io "docker pull bernardlin/flaskapi:beta && bash /home/mvpwebapp/server/flask/run_api_docker.sh bernardlin/flaskapi:beta"
+            rsh mvp@demo-app.rebloc.io "docker pull bernardlin/flaskapi:beta && bash /home/mvp/webapp/server/flask/run_api_docker.sh bernardlin/flaskapi:beta"
 
 workflows:
   version: 2
