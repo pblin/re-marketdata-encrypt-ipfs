@@ -123,7 +123,7 @@ def get_all_hits (conn,hitList):
 
     query = sql.SQL (selectQuery).format(sql.SQL(', ').join(sql.Placeholder()*len(hitList)))
 
-    print (hitList);
+    print (hitList)
 
     # print (query.as_string(conn))
     # make return result in dictionary
@@ -208,7 +208,8 @@ def deliver_sample_data (conn,table,id,limit,output):
     print ("key = %s" % cypherKey)
 
     selectQuery = "select {} from cherre_sample_data.%s " % table  + "limit %s" % limit
-    print (selectQuery)
+    # print (selectQuery)
+
     limitQuery = sql.SQL(selectQuery).format(sql.SQL(', ').join(map(sql.Identifier, cols)))
     print (limitQuery.as_string(conn))
     cursor.execute(limitQuery)
@@ -236,11 +237,12 @@ def deliver_sample_data (conn,table,id,limit,output):
     #put the file out to ipfs throug Infura service
     serverConfig = config(section='ipfs')
 
+    print (str(serverConfig))
     api = ipfsApi.Client(serverConfig['endpoint'], serverConfig['port'])
     res = api.add(encFileName)
 
-    #return ipfs Hash
-    print ( res['Hash'])
+    print (str(res))
+    # print ( res['Hash'])
     return res['Hash']
 
 
