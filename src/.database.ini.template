@@ -4,6 +4,7 @@ password="dbpassword"
 host=hosturl
 port=5432
 database=dbname
+sslmode=require
 sslrootcert=/path/to/root.crt
 
 [ipfs]
