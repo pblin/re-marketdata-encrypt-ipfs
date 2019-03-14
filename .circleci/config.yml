@@ -22,10 +22,9 @@ jobs:
       - run:
           name: Run Tests
           command: |
-            pwd
-            scp mvp@demo-app.rebloc.io:/var/local/democonfig/server/.database.ini . 
-            scp mvp@demo-app.rebloc.io:/var/local/democonfig/server/root.crt . 
-            python3.7 test_app.py
+            scp mvp@demo-app.rebloc.io:/var/local/democonfig/server/.database.ini ./src/
+            scp mvp@demo-app.rebloc.io:/var/local/democonfig/server/root.crt ./src/
+            cd src && python3.7 test_app.py
 
   deploy:
     machine: 
@@ -40,8 +39,8 @@ jobs:
       - run:
           name: Build and push Docker image
           command: |
-            cd src && scp mvp@demo-app.rebloc.io:/var/local/democonfig/server/.database.ini . 
-            cd src && scp mvp@demo-app.rebloc.io:/var/local/democonfig/server/root.crt . 
+            scp mvp@demo-app.rebloc.io:/var/local/democonfig/server/.database.ini ./src/
+            scp mvp@demo-app.rebloc.io:/var/local/democonfig/server/root.crt ./src/
             cd src && pyinstaller -F app.py && docker build -t bernardlin/flaskapi:beta -f Dockerfile.flask .
             echo $DOCKER_PWD | docker login -u $DOCKER_LOGIN --password-stdin
             docker push bernardlin/flaskapi:beta
