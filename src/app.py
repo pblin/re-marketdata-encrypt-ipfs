@@ -12,13 +12,16 @@ from Crypto.Util import Counter
 from Crypto import Random
 import json
 import csv
-import binascii
 import hashlib
 import gzip
 import os, random, struct
+from flask import Response
 
 
 app = Flask(__name__)
+
+
+
 
 def encrypt_file(key, in_filename, out_filename=None, chunksize=64*1024):
 
@@ -179,12 +182,12 @@ def search():
 
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
-        return "DB error", 500
+        return Response("DB error", status=500, mimetype='text/html')
     finally:
         if connection:
             connection.close()
 
-    return json.dumps(result, indent=4, sort_keys=False, default=str)
+    return Response(json.dumps(result, indent=4, sort_keys=False, default=str), status=200, mimetype='application/json')
 
 
 def deliver_sample_data (conn,table,id,limit,output):
@@ -260,12 +263,12 @@ def getData(tbl,ds_id):
         connection = psycopg2.connect(**params)
         connection.set_client_encoding('UTF8')
         rootHash = deliver_sample_data (connection,tbl,ds_id,limit,outputFormat)
-        print(rootHash)
-        return rootHash
+        # print(rootHash)
+        return Response(rootHash, status=200, mimetype='text/html')
 
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
-        return "DB error", 500
+        return Response("server error", status=500, mimetype='text/html')
 
     finally:
         if (connection):
