@@ -2,7 +2,7 @@ import app
 import unittest
 
 
-class TestHelloWorld(unittest.TestCase):
+class TestSampeAPI(unittest.TestCase):
 
     def setUp(self):
         self.app = app.app.test_client()
