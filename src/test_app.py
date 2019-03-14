@@ -8,11 +8,16 @@ class test_api(unittest.TestCase):
         self.app = app.app.test_client()
         self.app.testing = True
 
+    def tearDown(self):
+        pass
+
     def test_sample_status_code(self):
-        assert self.app.get('/sample/nyc_lot/test123').status_code == 200
+        response = self.app.get('/sample/nyc_lot/test123')
+        self.assertEqual(response.status_code, 200)
 
     def test_search_status_code(self):
-        assert self.app.get('/search?terms=tax').status_code == 200
+        response = self.app.get('/search?terms=tax')
+        self.assertEqual(response.status_code, 200)
 
 
 

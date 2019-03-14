@@ -17,10 +17,7 @@ import gzip
 import os, random, struct
 from flask import Response
 
-
 app = Flask(__name__)
-
-
 
 
 def encrypt_file(key, in_filename, out_filename=None, chunksize=64*1024):
