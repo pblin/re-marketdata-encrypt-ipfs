@@ -22,7 +22,7 @@ jobs:
       - run:
           name: Run Tests
           command: |
-            cd src && scp mvp@demo-app.rebloc.io:/home/mvp/webapp/server/.database.ini . && python3.7 test_app.py
+            cd src && scp mvp@demo-app.rebloc.io:/var/local/democonfig/server/.database.ini . && python3.7 test_app.py
 
   deploy:
     machine: true
@@ -36,7 +36,7 @@ jobs:
           name: Build and push Docker image
           command: |
             . flaskapi/bin/activate
-            cd src && scp mvp@demo-app.rebloc.io:/home/mvp/webapp/server/.database.ini . && pyinstaller -F app.py && docker build -t bernardlin/flaskapi:beta .
+            cd src && scp mvp@demo-app.rebloc.io:/var/local/democonfig/server/.database.ini . && pyinstaller -F app.py && docker build -t bernardlin/flaskapi:beta .
             echo $DOCKER_PWD | docker login -u $DOCKER_LOGIN --password-stdin
             docker push bernardlin/flaskapi:beta
       - run:
