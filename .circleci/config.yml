@@ -22,7 +22,6 @@ jobs:
       - run:
           name: Run Tests
           command: |
-            . flaskapi/bin/activate
             cd src && scp mvp@demo-app.rebloc.io:/home/mvp/webapp/server/.database.ini . && python3.7 test_app.py
 
   deploy:
