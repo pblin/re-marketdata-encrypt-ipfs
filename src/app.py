@@ -232,7 +232,7 @@ def deliver_sample_data (conn,table,id,limit,output):
 
     outFile.close()
     encFileName = resultFileName + '.enc'
-    encrypt_file(cypherKey.encode('utf8'), resultFileName,encFileName)
+    encrypt_file(cypherKey.encode('utf8'), resultFileName, encFileName)
 
     #put the file out to ipfs throug Infura service
     serverConfig = config(section='ipfs')
@@ -242,8 +242,7 @@ def deliver_sample_data (conn,table,id,limit,output):
     res = api.add(encFileName)
 
     print (str(res))
-    # print ( res['Hash'])
-    return res['Hash']
+    return res
 
 
 @app.route('/sample/<tbl>/<ds_id>')
@@ -261,9 +260,8 @@ def getData(tbl,ds_id):
         params = config()
         connection = psycopg2.connect(**params)
         connection.set_client_encoding('UTF8')
-        rootHash = deliver_sample_data (connection,tbl,ds_id,limit,outputFormat)
-        # print(rootHash)
-        return Response(rootHash, status=200, mimetype='text/html')
+        fileInfo = deliver_sample_data (connection,tbl,ds_id,limit,outputFormat)
+        return Response(json.dumps(fileInfo,indent=4, sort_keys=False, default=str) , status=200, mimetype='text/html')
 
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
