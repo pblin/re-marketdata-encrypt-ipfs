@@ -24,7 +24,8 @@ jobs:
             sudo add-apt-repository --yes ppa:deadsnakes/ppa
             sudo apt-get update -y
             sudo apt-get install -y python3.7
-            curl https://bootstrap.pypa.io/get-pip.py | sudo -H python3.7 
+            # curl https://bootstrap.pypa.io/get-pip.py | sudo -H python3.7 
+            sudo apt-get install -y python3-pip
             sudo python3.7 -m pip install
             sudo python3.7 -m pip install pipenv
             cd src && python3.7 -m pip install --no-cache-dir -r requirements.txt
