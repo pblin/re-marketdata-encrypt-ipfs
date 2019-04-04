@@ -14,8 +14,6 @@ WORKDIR /app
 
 RUN pip3 install -r requirements.txt
 
-COPY package.json /app
-COPY ./src /app
-RUN yarn 
-ENTRYPOINT ["yarn"]
-CMD ["run", "watch" ]
+COPY . /app
+
+CMD ["gunicorn3", "app:app", "-b", "0.0.0.0:8082"]
