@@ -116,9 +116,11 @@ def get_all_data_fields (conn,region,country):
 
 def get_all_hits (conn,hitList):
 
-    selectQuery = "SELECT id,name,description,delivery_method,access_url,num_of_records,search_terms,parameters," + \
-            "country,state_province,price_low,price_high,json_schema,date_created,date_modified " + \
-            " FROM marketplace.data_source_detail WHERE id in ({}) "
+    selectQuery = \
+        "SELECT id,name,description,delivery_method,access_url,sampl_access_url," + \
+        "table_name,num_of_records,search_terms,parameters," + \
+        "country,state_province,price_low,price_high,json_schema,date_created,date_modified " + \
+        " FROM marketplace.data_source_detail WHERE id in ({}) "
 
 
     query = sql.SQL (selectQuery).format(sql.SQL(', ').join(sql.Placeholder()*len(hitList)))
@@ -187,7 +189,7 @@ def search():
     return Response(json.dumps(result, indent=4, sort_keys=False, default=str), status=200, mimetype='application/json')
 
 
-def deliver_sample_data (conn,table,id,limit,output):
+def deliver_sample_data (conn,id,limit,output):
 
     #get published field names
     selectQuery = "select field_name from marketplace.source_of_field where source_id = " + put_quotes(id)
@@ -197,17 +199,17 @@ def deliver_sample_data (conn,table,id,limit,output):
     rows = cursor.fetchall()
     cols = [ x['field_name'] for x in rows ]
 
-    selectQuery = "select enc_data_key from marketplace.data_source_detail where id = " + put_quotes(id)
+    selectQuery = "select table_name, enc_sample_key from marketplace.data_source_detail where id = " + put_quotes(id)
 
     cursor.execute(selectQuery, id)
     row = cursor.fetchone()
 
     # 32 bytes encryption keys
-    cypherKey = hashlib.sha256(row['enc_data_key'].encode('utf-8')).hexdigest()[:32]
+    cypherKey = hashlib.sha256(row['enc_sample_key'].encode('utf-8')).hexdigest()[:32]
 
     print ("key = %s" % cypherKey)
 
-    selectQuery = "select {} from cherre_sample_data.%s " % table  + "limit %s" % limit
+    selectQuery = "select {} from cherre_sample_data.%s " % row['table_name']  + "limit %s" % limit
     # print (selectQuery)
 
     limitQuery = sql.SQL(selectQuery).format(sql.SQL(', ').join(map(sql.Identifier, cols)))
@@ -245,8 +247,8 @@ def deliver_sample_data (conn,table,id,limit,output):
     return res
 
 
-@app.route('/sample/<tbl>/<ds_id>')
-def getData(tbl,ds_id):
+@app.route('/sample/<ds_id>')
+def getData(ds_id):
     limit=request.args.get('limit')
     outputFormat=request.args.get('format')
 
@@ -260,7 +262,7 @@ def getData(tbl,ds_id):
         params = config()
         connection = psycopg2.connect(**params)
         connection.set_client_encoding('UTF8')
-        fileInfo = deliver_sample_data (connection,tbl,ds_id,limit,outputFormat)
+        fileInfo = deliver_sample_data (connection,ds_id,limit,outputFormat)
         return Response(json.dumps(fileInfo,indent=4, sort_keys=False, default=str) , status=200, mimetype='text/html')
 
     except (Exception, psycopg2.DatabaseError) as error:
