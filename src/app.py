@@ -117,7 +117,7 @@ def get_all_data_fields (conn,region,country):
 def get_all_hits (conn,hitList):
 
     selectQuery = \
-        "SELECT id,name,description,delivery_method,access_url,sampl_access_url," + \
+        "SELECT id,name,description,delivery_method,access_url,sample_access_url," + \
         "table_name,num_of_records,search_terms,parameters," + \
         "country,state_province,price_low,price_high,json_schema,date_created,date_modified " + \
         " FROM marketplace.data_source_detail WHERE id in ({}) "
