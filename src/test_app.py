@@ -12,7 +12,7 @@ class test_api(unittest.TestCase):
         pass
 
     def test_sample_status_code(self):
-        response = self.app.get('/sample/nyc_lot/test123')
+        response = self.app.get('/sample/test123')
         self.assertEqual(response.status_code, 200)
 
     def test_search_status_code(self):
