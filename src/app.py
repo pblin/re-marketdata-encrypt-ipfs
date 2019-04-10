@@ -8,9 +8,8 @@ from flask import request
 import simplejson as json
 import ipfsApi
 from Crypto.Cipher import AES
-from Crypto.Util import Counter
-from Crypto import Random
-import json
+# from Crypto.Util import Counter
+# from Crypto import Random
 import csv
 import hashlib
 import gzip
@@ -44,6 +43,7 @@ def encrypt_file(key, in_filename, out_filename=None, chunksize=64*1024):
                     chunk += ' '.encode('utf8') * (16 - len(chunk) % 16)
 
                 outfile.write(encryptor.encrypt(chunk))
+
 
 def decrypt_file(key, in_filename, out_filename=None, chunksize=24*1024):
     """ Decrypts a file using AES (CBC mode) with the
@@ -89,9 +89,11 @@ def config(filename='.database.ini', section='postgresql'):
 
     return info
 
+
 def put_quotes (s):
     quote = "'"
     return quote + s + quote
+
 
 def get_all_data_fields (conn,region,country):
     cursor = conn.cursor()
@@ -108,11 +110,11 @@ def get_all_data_fields (conn,region,country):
         else:
             query += "country = " + put_quotes(country)
 
-
     cursor.execute (query)
     rows = cursor.fetchall()
     # print (rows)
     return rows
+
 
 def get_all_hits (conn,hitList):
 
@@ -135,15 +137,17 @@ def get_all_hits (conn,hitList):
     #print (rows)
     return rows
 
-def prob (s1, aList):
-    if aList is not None:
-        for s2 in aList:
+
+def prob (s1, a_list):
+    if a_list is not None:
+        for s2 in a_list:
             if fuzz.WRatio (s1,s2) > 60:
                 return 1
             else:
                 return 0
     else:
         return 0
+
 
 @app.route('/search')
 def search():
@@ -166,10 +170,10 @@ def search():
         params = config()
         connection = psycopg2.connect(**params)
         connection.set_client_encoding('UTF8')
-        dataCollections = get_all_data_fields(connection,region,country)
+        data_collections = get_all_data_fields(connection,region,country)
         hits = []
 
-        for data in dataCollections:
+        for data in data_collections:
             if fuzz.WRatio(terms, data[1]) > 60 or prob(terms,data[2]) > 0:
                 if data[0] not in hits:
                     hits.append(data[0])
@@ -177,7 +181,6 @@ def search():
         if len(hits) > 0:
             result = get_all_hits(connection,hits)
             # print (result)
-
 
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
@@ -192,78 +195,81 @@ def search():
 def deliver_sample_data (conn,id,limit,output):
 
     #get published field names
-    selectQuery = "select field_name from marketplace.source_of_field where source_id = " + put_quotes(id)
+    select_query = "select field_name from marketplace.source_of_field where source_id = " + put_quotes(id)
 
     cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    cursor.execute(selectQuery)
+    cursor.execute(select_query)
     rows = cursor.fetchall()
     cols = [ x['field_name'] for x in rows ]
 
-    selectQuery = "select table_name, enc_sample_key from marketplace.data_source_detail where id = " + put_quotes(id)
+    select_query = "select table_name, enc_sample_key from marketplace.data_source_detail where id = " + put_quotes(id)
 
-    cursor.execute(selectQuery, id)
+    cursor.execute(select_query, id)
     row = cursor.fetchone()
 
+    #set default
+    if row['enc_sample_key'] == None:
+        row['enc_sample_key'] = 'toomanysecrets'
+
     # 32 bytes encryption keys
-    cypherKey = hashlib.sha256(row['enc_sample_key'].encode('utf-8')).hexdigest()[:32]
+    cypher_key = hashlib.sha256(row['enc_sample_key'].encode('utf-8')).hexdigest()[:32]
 
-    print ("key = %s" % cypherKey)
+    print ("key = %s" % cypher_key)
 
-    selectQuery = "select {} from cherre_sample_data.%s " % row['table_name']  + "limit %s" % limit
+    select_query = "select {} from cherre_sample_data.%s " % row['table_name']  + "limit %s" % limit
     # print (selectQuery)
 
-    limitQuery = sql.SQL(selectQuery).format(sql.SQL(', ').join(map(sql.Identifier, cols)))
-    print (limitQuery.as_string(conn))
-    cursor.execute(limitQuery)
+    limit_query = sql.SQL(select_query).format(sql.SQL(', ').join(map(sql.Identifier, cols)))
+    print (limit_query.as_string(conn))
+    cursor.execute(limit_query)
     rows = cursor.fetchall()
 
-
-    jsonString = json.dumps(rows, indent=4, sort_keys=False, default=str)
-
-    resultFileName = "/tmp/%s.%s.gz" % (id, output)
-
-    outFile = gzip.open(resultFileName, "w")
+    json_str = json.dumps(rows, indent=4, sort_keys=False, default=str)
+    result_file_name = "/tmp/%s.%s.gz" % (id, output)
+    out_file = gzip.open(result_file_name, "w")
 
     if output == "json":
-        outFile.write (jsonString.encode('utf8'))
+        out_file.write (json_str.encode('utf8'))
     else:
-        csvWriter = csv.DictWriter(outFile,fieldnames=cols)
-        csvWriter.writeheader()
+        csv_writer = csv.DictWriter(out_file,fieldnames=cols)
+        csv_writer.writeheader()
         for row in rows:
-            csvWriter.writerow (row)
+            csv_writer.writerow (row)
 
-    outFile.close()
-    encFileName = resultFileName + '.enc'
-    encrypt_file(cypherKey.encode('utf8'), resultFileName, encFileName)
+    out_file.close()
+    enc_file_name = result_file_name + '.enc'
+    encrypt_file(cypher_key.encode('utf8'), result_file_name, enc_file_name)
 
     #put the file out to ipfs throug Infura service
-    serverConfig = config(section='ipfs')
+    server_config = config(section='ipfs')
 
-    print (str(serverConfig))
-    api = ipfsApi.Client(serverConfig['endpoint'], serverConfig['port'])
-    res = api.add(encFileName)
+    print (str(server_config))
+    api = ipfsApi.Client(server_config['endpoint'], server_config['port'])
+    res = api.add(enc_file_name)
 
     print (str(res))
     return res
 
 
 @app.route('/sample/<ds_id>')
-def getData(ds_id):
+def get_data(ds_id):
     limit=request.args.get('limit')
-    outputFormat=request.args.get('format')
+    output_format=request.args.get('format')
 
     # set defaul
     if limit is None:
         limit = 500
-    if outputFormat is None:
-        outputFormat = 'json'
+
+    #default to json
+    if output_format is None:
+        output_format = 'json'
 
     try:
         params = config()
         connection = psycopg2.connect(**params)
         connection.set_client_encoding('UTF8')
-        fileInfo = deliver_sample_data (connection,ds_id,limit,outputFormat)
-        return Response(json.dumps(fileInfo,indent=4, sort_keys=False, default=str) , status=200, mimetype='text/html')
+        file_info= deliver_sample_data (connection,ds_id,limit,output_format)
+        return Response(json.dumps(file_info,indent=4, sort_keys=False, default=str) , status=200, mimetype='text/html')
 
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
