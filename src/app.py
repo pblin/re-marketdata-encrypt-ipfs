@@ -281,4 +281,4 @@ def get_data(ds_id):
 
 
 if __name__ == '__main__':
-    app.run(ssl_context=('cert.pem', 'key.pem'))
+    app.run(threaded=True)
