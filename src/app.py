@@ -18,7 +18,6 @@ from flask import Response
 
 app = Flask(__name__)
 
-
 def encrypt_file(key, in_filename, out_filename=None, chunksize=64*1024):
 
     if not out_filename:
@@ -148,6 +147,9 @@ def prob (s1, a_list):
     else:
         return 0
 
+@app.route("/")
+def hello():
+    return "Hello!"
 
 @app.route('/search')
 def search():
@@ -281,4 +283,6 @@ def get_data(ds_id):
 
 
 if __name__ == '__main__':
-    app.run(threaded=True)
+    ssl = config(section='ssl')
+    context = (ssl['cert'], ssl['key'])
+    app.run(ssl_context=context,threaded=True)
