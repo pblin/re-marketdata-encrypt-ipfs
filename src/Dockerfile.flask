@@ -16,4 +16,5 @@ RUN pip3 install -r requirements.txt
 
 COPY . /app
 
-CMD ["gunicorn3", "app:app", "-b", "0.0.0.0:8082"]
+ENTRYPOINT ["gunicorn3"]
+CMD ["--certfile", "cert.pem","--keyfile","key.pem","-b", "0.0.0.0:8082","app:app"]

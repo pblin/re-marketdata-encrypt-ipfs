@@ -37,15 +37,17 @@ jobs:
       - run:
           name: Build and push Docker image
           command: |
-            sudo apt install -y gnupg2 pass
+            sudo apt install -y gnupg2 pass 
             scp mvp@demo-app.rebloc.io:/var/local/democonfig/server/.database.ini ./src/
             scp mvp@demo-app.rebloc.io:/var/local/democonfig/server/root.crt ./src/
-            cd src && docker build -t bernardlin/flaskapi:beta -f Dockerfile.flask .
+            scp mvp@demo-app.rebloc.io:/home/mvp/tls/* ./src/
+            cd src && docker build --rm -t bernardlin/flaskapi:beta -f Dockerfile.flask .
             echo $DOCKER_PWD | docker login -u $DOCKER_LOGIN --password-stdin
             docker push bernardlin/flaskapi:beta
       - run:
           name: start up docker
           command: |
+            rsh mvp@demo-app.rebloc.io "docker system prune -f "
             rsh  mvp@demo-app.rebloc.io "if [ ! -d 'webapp/server/flask' ]; then mkdir -p webapp/server/flask; fi"
             scp ./src/run_api_docker.sh mvp@demo-app.rebloc.io:/home/mvp/webapp/server/flask
             rsh mvp@demo-app.rebloc.io "docker pull bernardlin/flaskapi:beta && bash /home/mvp/webapp/server/flask/run_api_docker.sh bernardlin/flaskapi:beta"
