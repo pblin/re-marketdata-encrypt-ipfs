@@ -52,15 +52,13 @@ def decrypt_file(key, in_filename, out_filename=None, chunksize=24*1024):
         (i.e. if in_filename is 'aaa.zip.enc' then
         out_filename will be 'aaa.zip')
     """
-    if not out_filename:
-        out_filename = os.path.splitext(in_filename)[0] + '.gz'
 
     with open(in_filename, 'rb') as infile:
         origsize = struct.unpack('<Q', infile.read(struct.calcsize('Q')))[0]
         iv = infile.read(16)
         decryptor = AES.new(key, AES.MODE_CBC, iv)
 
-        with open(out_filename + '.gz', 'wb') as outfile:
+        with open(out_filename, 'wb') as outfile:
             while True:
                 chunk = infile.read(chunksize)
                 if len(chunk) == 0:
@@ -68,6 +66,8 @@ def decrypt_file(key, in_filename, out_filename=None, chunksize=24*1024):
                 outfile.write(decryptor.decrypt(chunk))
 
             outfile.truncate(origsize)
+
+
 
 
 def config(filename='.database.ini', section='postgresql'):
@@ -281,6 +281,18 @@ def get_data(ds_id):
         if (connection):
             connection.close()
 
+
+@app.route('/decrypt/<key>/<file_hash>')
+def decrpt_has (key,file_hash):
+    server_config = config(section='ipfs')
+    api = ipfsApi.Client(server_config['endpoint'], server_config['port'])
+    api.get(file_hash)
+    outfile_name = 'plaintext.gz'
+    decrypt_file(key.encode('utf-8'),file_hash, outfile_name)
+    with gzip.open(outfile_name, "r") as file:
+        data = file.read()
+
+    return Response (data, mimetype='application/json')
 
 if __name__ == '__main__':
     ssl = config(section='ssl')
