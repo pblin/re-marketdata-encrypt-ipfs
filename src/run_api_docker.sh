@@ -1,6 +1,6 @@
 #!/bin/bash
 CONTAINER_IMAGE=$1
-if [ `docker ps | grep searchapi | wc -l` -gt 0 ]; then
+if [ `docker ps | grep dataapi | wc -l` -gt 0 ]; then
 	docker stop dataapi
 fi
 docker container prune -f 
