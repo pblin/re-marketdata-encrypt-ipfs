@@ -37,7 +37,7 @@ jobs:
       - run:
           name: Build and push Docker image
           command: |
-            sudo apt install -y gnupg2 pass 
+            sudo killall -9 apt || true && sudo apt update && sudo apt install -y gnupg2 pass 
             scp mvp@demo-app.rebloc.io:/var/local/democonfig/server/.database.ini ./src/
             scp mvp@demo-app.rebloc.io:/var/local/democonfig/server/root.crt ./src/
             scp mvp@demo-app.rebloc.io:/home/mvp/tls/* ./src/
