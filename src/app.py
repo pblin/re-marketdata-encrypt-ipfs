@@ -1,22 +1,37 @@
 from flask import Flask
-from fuzzywuzzy import fuzz
-import psycopg2
-from psycopg2 import sql
-from psycopg2 import extras
 from configparser import ConfigParser
 from flask import request
 import simplejson as json
 import ipfsApi
 from Crypto.Cipher import AES
-# from Crypto.Util import Counter
-# from Crypto import Random
-import csv
-import hashlib
+#import csv
+#import hashlib
 import gzip
 import os, random, struct
 from flask import Response
+from web3 import Web3, HTTPProvider, IPCProvider, WebsocketProvider
+import uuid
+import hvac
+import time
+import logging
+import logging.config
 
 app = Flask(__name__)
+
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                    datefmt='%m-%d %H:%M',
+                    filename='/tmp/settlement.log',
+                    filemode='w')
+# define a Handler which writes INFO messages or higher to the sys.stderr
+console = logging.StreamHandler()
+console.setLevel(logging.INFO)
+# set a format which is simpler for console use
+formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+# tell the handler to use this format
+console.setFormatter(formatter)
+# add the handler to the root logger
+logging.getLogger('').addHandler(console)
 
 def encrypt_file(key, in_filename, out_filename=None, chunksize=64*1024):
 
@@ -25,7 +40,7 @@ def encrypt_file(key, in_filename, out_filename=None, chunksize=64*1024):
 
     # iv = ''.join(chr(random.randint(0, 0xFF)) for i in range(16))
     iv = os.urandom(16)
-    # print ("iv = %s, size = %d" % (str(iv) ,len(iv)))
+    # logging.info ("iv = %s, size = %d" % (str(iv) ,len(iv)))
     encryptor = AES.new(key, AES.MODE_CBC, iv)
     filesize = os.path.getsize(in_filename)
 
@@ -67,9 +82,6 @@ def decrypt_file(key, in_filename, out_filename=None, chunksize=24*1024):
 
             outfile.truncate(origsize)
 
-
-
-
 def config(filename='.database.ini', section='postgresql'):
     # create a parser
     parser = ConfigParser()
@@ -88,199 +100,146 @@ def config(filename='.database.ini', section='postgresql'):
 
     return info
 
-
-def put_quotes (s):
-    quote = "'"
-    return quote + s + quote
-
-
-def get_all_data_fields (conn,region,country):
-    cursor = conn.cursor()
-    query = 'SELECT source_id,field_label,search_terms from marketplace.source_of_field '
-
-    if region is not None or country is not None:
-        query += "WHERE "
-        if region is not None:
-            query += "region = " + put_quotes(region)
-
-            if country is not None:
-                query += " AND country = " + put_quotes(country)
-
-        else:
-            query += "country = " + put_quotes(country)
-
-    cursor.execute (query)
-    rows = cursor.fetchall()
-    # print (rows)
-    return rows
-
-
-def get_all_hits (conn,hitList):
-
-    selectQuery = \
-        "SELECT id,name,description,delivery_method,access_url,sample_access_url," + \
-        "table_name,num_of_records,search_terms,parameters," + \
-        "country,state_province,price_low,price_high,json_schema,date_created,date_modified " + \
-        " FROM marketplace.data_source_detail WHERE id in ({}) "
-
-
-    query = sql.SQL (selectQuery).format(sql.SQL(', ').join(sql.Placeholder()*len(hitList)))
-
-    print (hitList)
-
-    # print (query.as_string(conn))
-    # make return result in dictionary
-    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    cursor.execute (query, hitList)
-    rows = cursor.fetchall()
-    #print (rows)
-    return rows
-
-
-def prob (s1, a_list):
-    if a_list is not None:
-        for s2 in a_list:
-            if fuzz.WRatio (s1,s2) > 60:
-                return 1
-            else:
-                return 0
-    else:
-        return 0
-
 @app.route("/")
 def hello():
     return "Hello!"
 
-@app.route('/search')
-def search():
-    terms = request.args.get('terms')
-    if terms is not None:
-        terms = terms.lower()
-
-    country = request.args.get('country')
-    if country is not None:
-        country = country.lower()
-
-    region = request.args.get('region')
-    if region is not None:
-        region = region.lower()
-
-    result = None
-    connection = None
-
+@app.route('/tx/send', methods = ['POST'])
+def transaction_post ():
     try:
-        params = config()
-        connection = psycopg2.connect(**params)
-        connection.set_client_encoding('UTF8')
-        data_collections = get_all_data_fields(connection,region,country)
-        hits = []
+        web3_config = config(section='web3')
+        vault_config = config(section='vault')
+        vault_conn = hvac.Client(url=vault_config['url'], token=vault_config['token'])
+        w3 = Web3(Web3.HTTPProvider(web3_config['chain_ip']))
 
-        for data in data_collections:
-            if fuzz.WRatio(terms, data[1]) > 60 or prob(terms,data[2]) > 0:
-                if data[0] not in hits:
-                    hits.append(data[0])
+        with open(web3_config['contract_abi'],'rb') as json_file:
+            contract_json = json.load(json_file)
 
-        if len(hits) > 0:
-            result = get_all_hits(connection,hits)
-            # print (result)
+        contract_abi = contract_json['abi']
+        token_contract = w3.eth.contract(web3_config['contract_addr'], abi=contract_abi)
+        operator_address = token_contract.functions.getOperatorAccount().call()
+        logging.info('operator='+operator_address)
+        # logging.info('operator='+operator_address)
+        body = request.get_json()
+        logging.info('pay load= %s' + json.dumps(body))
 
-    except (Exception, psycopg2.DatabaseError) as error:
-        print(error)
-        return Response("DB error", status=500, mimetype='text/html')
-    finally:
-        if connection:
-            connection.close()
+        if body is None:
+            data = dict({'status': 'nodata'})
+            Response(json.dumps(data), mimetype='application/json')
 
-    return Response(json.dumps(result, indent=4, sort_keys=False, default=str), status=200, mimetype='application/json')
+        dataset_id = uuid.UUID(body['dataset_id']).bytes #convert UUID to bytes
+        file_hash = body['data_hash']
+        compression = body['data_compression']
+        ipfs_hash = body['data_loc_hash']
+        size = body['num_of_records']
+        price = body['trade']
+        pricing_unit = body['pricing_unit']
+        token_uri = body['access_url']
+        buyer_account = body['buyer_wallet_addr']
+        seller_account = body['seller_wallet_addr']
+        seller_email = body['seller_email']
 
+        # The operator mints a ERC-721 token for the seller
+        # Estimate gas need
+        gas_price = w3.eth.gasPrice
+        estimated_gas = token_contract.functions.mint(
+                                            dataset_id,
+                                            file_hash,
+                                            compression,
+                                            ipfs_hash,
+                                            size,
+                                            price,
+                                            pricing_unit,
+                                            token_uri,
+                                            seller_account).estimateGas({
+                                                    'nonce': w3.eth.getTransactionCount(operator_address),
+                                                    'from': operator_address
+                                                 })
 
-def deliver_sample_data (conn,id,limit,output):
+        # logging.info ('estimated gas for minting a token = %d' % estimated_gas)
+        logging.info('estimated gas for minting a token = %d' % estimated_gas)
+        txn = token_contract.functions.mint(dataset_id,
+                                            file_hash,
+                                            compression,
+                                            ipfs_hash,
+                                            size,
+                                            price,
+                                            pricing_unit,
+                                            token_uri,
+                                            seller_account).buildTransaction({
+                                                    'nonce': w3.eth.getTransactionCount(operator_address),
+                                                    'from': operator_address,
+                                                    'gas': estimated_gas,
+                                                    'gasPrice': gas_price})
+        vault_key_query = vault_conn.secrets.kv.v1.read_secret(path='cryptooperator',mount_point='/secret')
+        private_key = vault_key_query['data']['pk']
+        signed = w3.eth.account.signTransaction(txn, private_key)
+        txn_hash = w3.eth.sendRawTransaction(signed.rawTransaction)
+        logging.info ("token mint: %s" % str(txn_hash.hex()))
+        tx_receipt = w3.eth.getTransactionReceipt(txn_hash)
+        while tx_receipt is None:
+            tx_receipt = w3.eth.getTransactionReceipt(txn_hash)
+            logging.info ('waiting for transaction to be mined')
+            time.sleep(1)
 
-    #get published field names
-    select_query = "select field_name from marketplace.source_of_field where source_id = " + put_quotes(id)
+        mint_event = token_contract.events.MintToken().processReceipt(tx_receipt)
+        token_id = mint_event[0]['args']['_tokenId']
+        logging.info('token id = %d' % token_id)
 
-    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    cursor.execute(select_query)
-    rows = cursor.fetchall()
-    cols = [ x['field_name'] for x in rows ]
+        #Supply transaction and gas fees to seller
+        current_balance = w3.eth.getBalance(seller_account)
+        logging.info('current seller accout %s balance %d' % (seller_account, current_balance))
 
-    select_query = "select table_name, enc_sample_key from marketplace.data_source_detail where id = " + put_quotes(id)
+        if (current_balance ) < Web3.toWei(0.001, 'ether'):
+            diff = Web3.toWei(0.001, 'ether') - current_balance
+            logging.info ('wei to send: %d' % diff)
+            gas = w3.eth.estimateGas({'to':seller_account, 'from':operator_address, 'value': diff})
+            signed_txn = w3.eth.account.signTransaction(dict(
+                                    nonce=w3.eth.getTransactionCount(operator_address),
+                                    to=seller_account,
+                                    gas = gas,
+                                    gasPrice = gas_price,
+                                    value = diff
+                                  ),
+                                  private_key)
 
-    cursor.execute(select_query, id)
-    row = cursor.fetchone()
+            txn_hash = w3.eth.sendRawTransaction(signed_txn.rawTransaction)
+            logging.info ('tranfer tx hash-> %s' % str(txn_hash.hex()))
+            while tx_receipt is None:
+                tx_receipt = w3.eth.getTransactionReceipt(txn_hash)
+                logging.info('waiting for transaction to be mined')
+                time.sleep(0.1)
 
-    #set default
-    if row['enc_sample_key'] == None:
-        row['enc_sample_key'] = 'toomanysecrets'
+        # Transfer the data token from seller to buyer
+        gas = token_contract.functions.purchaseWithFiat(token_id, 0, buyer_account).estimateGas(
+            {'nonce': w3.eth.getTransactionCount(seller_account),
+             'from': seller_account})
 
-    # 32 bytes encryption keys
-    cypher_key = hashlib.sha256(row['enc_sample_key'].encode('utf-8')).hexdigest()[:32]
+        logging.info('estimate gas = %d' % gas)
+        txn = token_contract.functions.purchaseWithFiat(token_id,0, buyer_account)\
+            .buildTransaction({'nonce': w3.eth.getTransactionCount(seller_account),
+                               'from': seller_account,
+                               'gas': gas,
+                               'gasPrice': w3.eth.gasPrice})
+        logging.info ('seller account = %s' % seller_account)
+        kv_path = str(seller_email.encode('utf-8').hex()) + '-1'
+        vault_key_query = vault_conn.secrets.kv.v1.read_secret(path=kv_path, mount_point='/secret')
+        private_key = vault_key_query['data']['pk']
+        signed = w3.eth.account.signTransaction(txn, private_key)
+        txn_hash = w3.eth.sendRawTransaction(signed.rawTransaction)
+        while tx_receipt is None:
+            tx_receipt = w3.eth.getTransactionReceipt(txn_hash)
+            logging.info('waiting for transaction to be mined')
+            time.sleep(0.1)
+        tx_hash_str = str(txn_hash.hex())
+        logging.info('txn hash = %s' % tx_hash_str)
+        data = dict({'status':'ok','token_id': token_id, 'txn_hash':tx_hash_str})
+        return Response(json.dumps(data), mimetype='application/json')
 
-    print ("key = %s" % cypher_key)
-
-    select_query = "select {} from cherre_sample_data.%s " % row['table_name']  + "limit %s" % limit
-    # print (selectQuery)
-
-    limit_query = sql.SQL(select_query).format(sql.SQL(', ').join(map(sql.Identifier, cols)))
-    print (limit_query.as_string(conn))
-    cursor.execute(limit_query)
-    rows = cursor.fetchall()
-
-    json_str = json.dumps(rows, indent=4, sort_keys=False, default=str)
-    result_file_name = "/tmp/%s.%s.gz" % (id, output)
-    out_file = gzip.open(result_file_name, "w")
-
-    if output == "json":
-        out_file.write (json_str.encode('utf8'))
-    else:
-        csv_writer = csv.DictWriter(out_file,fieldnames=cols)
-        csv_writer.writeheader()
-        for row in rows:
-            csv_writer.writerow (row)
-
-    out_file.close()
-    enc_file_name = result_file_name + '.enc'
-    encrypt_file(cypher_key.encode('utf8'), result_file_name, enc_file_name)
-
-    #put the file out to ipfs throug Infura service
-    server_config = config(section='ipfs')
-
-    print (str(server_config))
-    api = ipfsApi.Client(server_config['endpoint'], server_config['port'])
-    res = api.add(enc_file_name)
-
-    print (str(res))
-    return res
-
-
-@app.route('/sample/<ds_id>')
-def get_data(ds_id):
-    limit=request.args.get('limit')
-    output_format=request.args.get('format')
-
-    # set defaul
-    if limit is None:
-        limit = 500
-
-    #default to json
-    if output_format is None:
-        output_format = 'json'
-
-    try:
-        params = config()
-        connection = psycopg2.connect(**params)
-        connection.set_client_encoding('UTF8')
-        file_info= deliver_sample_data (connection,ds_id,limit,output_format)
-        return Response(json.dumps(file_info,indent=4, sort_keys=False, default=str) , status=200, mimetype='text/html')
-
-    except (Exception, psycopg2.DatabaseError) as error:
-        print(error)
-        return Response("server error", status=500, mimetype='text/html')
-
-    finally:
-        if (connection):
-            connection.close()
-
+    except Exception as e:
+        logging.error("Ouch Exception occurred", exc_info=True)
+        data = dict({'status':'failed','error':'settlement error check /tmp/orderlog'})
+        return Response(json.dumps(data), mimetype='application/json')
 
 @app.route('/decrypt/<key>/<file_hash>')
 def decrpt_has (key,file_hash):
