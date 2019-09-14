@@ -132,7 +132,8 @@ def transaction_post ():
         compression = body['data_compression']
         ipfs_hash = body['data_loc_hash']
         size = body['num_of_records']
-        price = body['trade']
+        # Ethereum VM does not take floating points, use cents
+        price = int(body['trade']*100)
         pricing_unit = body['pricing_unit']
         token_uri = body['access_url']
         buyer_account = body['buyer_wallet_addr']
