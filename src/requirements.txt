@@ -58,6 +58,7 @@ graphql-core==2.1
 hendrix==3.2.2
 hexbytes==0.1.0
 humanize==0.5.1
+hvac==0.9.5
 hyperlink==18.0.0
 idna==2.8
 importlib-metadata==0.15
@@ -123,7 +124,6 @@ pyasn1-modules==0.2.4
 pychalk==2.0.1
 pycodestyle==2.5.0
 pycparser==2.19
-pycryptodome==3.9.0
 pyethash==0.1.27
 pyflakes==2.1.1
 Pygments==2.3.1
