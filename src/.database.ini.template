@@ -9,4 +9,8 @@ sslrootcert=/path/to/root.crt
 
 [ipfs]
 endpoint="url of ipfs node"
-port=5001
+port=
+
+[ssl]
+key=key.pem
+cert=cert.pem
