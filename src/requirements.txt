@@ -114,7 +114,7 @@ protobuf==3.9.1
 psycopg2==2.7.7
 psycopg2-binary==2.7.7
 ptyprocess==0.6.0
-py==1.8.0
+py==1.10.0
 py-ecc==1.4.7
 py-evm==0.2.0a39
 py-geth==2.0.1
