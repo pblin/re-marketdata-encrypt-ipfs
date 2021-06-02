@@ -173,7 +173,7 @@ two1==3.10.9
 txaio==18.8.1
 tzlocal==2.0.0b1
 umbral==0.1.3a0
-urllib3==1.24.1
+urllib3==1.26.5
 varint==1.0.2
 virtualenv==16.4.1
 watchdog==0.9.0
