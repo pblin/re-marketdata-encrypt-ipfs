@@ -21,7 +21,7 @@ app = Flask(__name__)
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                     datefmt='%m-%d %H:%M',
-                    filename='/tmp/settlement.log',
+                    filename='/app/tmp/settlement.log',
                     filemode='w')
 # define a Handler which writes INFO messages or higher to the sys.stderr
 console = logging.StreamHandler()
@@ -239,7 +239,7 @@ def transaction_post ():
 
     except Exception as e:
         logging.error("Ouch Exception occurred", exc_info=True)
-        data = dict({'status':'failed','error':'settlement error check /tmp/orderlog'})
+        data = dict({'status':'failed','error':'settlement error check /app/tmp/orderlog'})
         return Response(json.dumps(data), mimetype='application/json')
 
 @app.route('/decrypt/<key>/<file_hash>')
@@ -255,6 +255,7 @@ def decrpt_has (key,file_hash):
     return Response (data, mimetype='application/json')
 
 if __name__ == '__main__':
-    ssl = config(section='ssl')
-    context = (ssl['cert'], ssl['key'])
-    app.run(ssl_context=context,threaded=True)
+    #ssl = config(section='ssl')
+    #context = (ssl['cert'], ssl['key'])
+    #app.run(ssl_context=context,threaded=True)
+    app.run(threaded=True)
