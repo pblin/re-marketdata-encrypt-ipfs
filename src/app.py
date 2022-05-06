@@ -255,7 +255,7 @@ def decrpt_has (key,file_hash):
     return Response (data, mimetype='application/json')
 
 if __name__ == '__main__':
-    #ssl = config(section='ssl')
-    #context = (ssl['cert'], ssl['key'])
-    #app.run(ssl_context=context,threaded=True)
-    app.run(threaded=True)
+    ssl = config(section='ssl')
+    #ontext = (ssl['cert'], ssl['key'])
+    app.run(ssl_context=context,threaded=True)
+    #app.run(threaded=True)
