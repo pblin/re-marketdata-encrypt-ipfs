@@ -256,6 +256,6 @@ def decrpt_has (key,file_hash):
 
 if __name__ == '__main__':
     ssl = config(section='ssl')
-    #ontext = (ssl['cert'], ssl['key'])
+    ontext = (ssl['cert'], ssl['key'])
     app.run(ssl_context=context,threaded=True)
     #app.run(threaded=True)
