@@ -177,7 +177,7 @@ def transaction_post ():
         signed = w3.eth.account.signTransaction(txn, private_key)
         txn_hash = w3.eth.sendRawTransaction(signed.rawTransaction)
         logging.info ("token mint: %s" % str(txn_hash.hex()))
-        tx_receipt = w3.eth.gwait_for_transaction_receipt(txn_hash,timeout=360)
+        tx_receipt = w3.eth.wait_for_transaction_receipt(txn_hash,timeout=360)
         
         mint_event = token_contract.events.MintToken().processReceipt(tx_receipt)
         token_id = mint_event[0]['args']['_tokenId']
@@ -203,7 +203,7 @@ def transaction_post ():
             txn_hash = w3.eth.sendRawTransaction(signed_txn.rawTransaction)
             logging.info ('tranfer tx hash-> %s' % str(txn_hash.hex()))
             logging.info('waiting for transaction to be mined')
-            tx_receipt = w3.eth.gwait_for_transaction_receipt(txn_hash,timeout=360)
+            tx_receipt = w3.eth.wait_for_transaction_receipt(txn_hash,timeout=360)
 
         # Transfer the data token from seller to buyer
         gas = token_contract.functions.purchaseWithFiat(token_id, 0, buyer_account).estimateGas(
@@ -223,7 +223,7 @@ def transaction_post ():
         signed = w3.eth.account.signTransaction(txn, private_key)
         txn_hash = w3.eth.sendRawTransaction(signed.rawTransaction)
         logging.info ('waiting token transfer receipt = %s' % txn_hash)
-        tx_receipt = w3.eth.gwait_for_transaction_receipt(txn_hash,timeout=360)
+        tx_receipt = w3.eth.wait_for_transaction_receipt(txn_hash,timeout=360)
         
         tx_hash_str = str(txn_hash.hex())
         logging.info('txn hash = %s' % tx_hash_str)
