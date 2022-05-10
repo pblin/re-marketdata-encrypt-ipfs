@@ -177,12 +177,8 @@ def transaction_post ():
         signed = w3.eth.account.signTransaction(txn, private_key)
         txn_hash = w3.eth.sendRawTransaction(signed.rawTransaction)
         logging.info ("token mint: %s" % str(txn_hash.hex()))
-        tx_receipt = w3.eth.getTransactionReceipt(txn_hash)
-        while tx_receipt is None:
-            tx_receipt = w3.eth.getTransactionReceipt(txn_hash)
-            logging.info ('waiting for transaction to be mined')
-            time.sleep(1)
-
+        tx_receipt = w3.eth.gwait_for_transaction_receipt(txn_hash,imeout=360)
+        
         mint_event = token_contract.events.MintToken().processReceipt(tx_receipt)
         token_id = mint_event[0]['args']['_tokenId']
         logging.info('token id = %d' % token_id)
@@ -206,10 +202,8 @@ def transaction_post ():
 
             txn_hash = w3.eth.sendRawTransaction(signed_txn.rawTransaction)
             logging.info ('tranfer tx hash-> %s' % str(txn_hash.hex()))
-            while tx_receipt is None:
-                tx_receipt = w3.eth.getTransactionReceipt(txn_hash)
-                logging.info('waiting for transaction to be mined')
-                time.sleep(0.1)
+            logging.info('waiting for transaction to be mined')
+            tx_receipt = w3.eth.gwait_for_transaction_receipt(txn_hash,imeout=360)
 
         # Transfer the data token from seller to buyer
         gas = token_contract.functions.purchaseWithFiat(token_id, 0, buyer_account).estimateGas(
@@ -228,10 +222,9 @@ def transaction_post ():
         private_key = vault_key_query['data']['pk']
         signed = w3.eth.account.signTransaction(txn, private_key)
         txn_hash = w3.eth.sendRawTransaction(signed.rawTransaction)
-        while tx_receipt is None:
-            tx_receipt = w3.eth.getTransactionReceipt(txn_hash)
-            logging.info('waiting for transaction to be mined')
-            time.sleep(0.1)
+        logging.info ('waiting token transfer receipt = %s' % txn_hash)
+        tx_receipt = w3.eth.gwait_for_transaction_receipt(txn_hash,imeout=360)
+        
         tx_hash_str = str(txn_hash.hex())
         logging.info('txn hash = %s' % tx_hash_str)
         data = dict({'status':'ok','token_id': token_id, 'txn_hash':tx_hash_str})
