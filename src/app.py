@@ -21,7 +21,7 @@ app = Flask(__name__)
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                     datefmt='%m-%d %H:%M',
-                    filename='/tmp/settlement/settlement.log',
+                    filename='/tmp/settlement.log',
                     filemode='w')
 # define a Handler which writes INFO messages or higher to the sys.stderr
 console = logging.StreamHandler()
@@ -177,13 +177,12 @@ def transaction_post ():
         signed = w3.eth.account.signTransaction(txn, private_key)
         txn_hash = w3.eth.sendRawTransaction(signed.rawTransaction)
         logging.info ("token mint: %s" % str(txn_hash.hex()))
-        time.sleep(20)
         tx_receipt = w3.eth.getTransactionReceipt(txn_hash)
         while tx_receipt is None:
             tx_receipt = w3.eth.getTransactionReceipt(txn_hash)
             logging.info ('waiting for transaction to be mined')
-            time.sleep(10)
-        
+            time.sleep(1)
+
         mint_event = token_contract.events.MintToken().processReceipt(tx_receipt)
         token_id = mint_event[0]['args']['_tokenId']
         logging.info('token id = %d' % token_id)
@@ -207,14 +206,10 @@ def transaction_post ():
 
             txn_hash = w3.eth.sendRawTransaction(signed_txn.rawTransaction)
             logging.info ('tranfer tx hash-> %s' % str(txn_hash.hex()))
-            logging.info('waiting for transaction to be mined')
-            # wait 30 seconds before trying to get receipt
-            time.sleep(20)
-            tx_receipt = w3.eth.getTransactionReceipt(txn_hash)
             while tx_receipt is None:
                 tx_receipt = w3.eth.getTransactionReceipt(txn_hash)
-                logging.info ('waiting for transaction to be mined')
-                time.sleep(10)
+                logging.info('waiting for transaction to be mined')
+                time.sleep(0.1)
 
         # Transfer the data token from seller to buyer
         gas = token_contract.functions.purchaseWithFiat(token_id, 0, buyer_account).estimateGas(
@@ -229,20 +224,14 @@ def transaction_post ():
                                'gasPrice': w3.eth.gasPrice})
         logging.info ('seller account = %s' % seller_account)
         kv_path = str(seller_email.encode('utf-8').hex()) + '-1'
-        # print (kv_path)
         vault_key_query = vault_conn.secrets.kv.v1.read_secret(path=kv_path, mount_point='/secret')
         private_key = vault_key_query['data']['pk']
-        # print (private_key)
         signed = w3.eth.account.signTransaction(txn, private_key)
         txn_hash = w3.eth.sendRawTransaction(signed.rawTransaction)
-        logging.info ('waiting token transfer receipt = %s' % txn_hash)
-        time.sleep(20)
-        tx_receipt = w3.eth.getTransactionReceipt(txn_hash)
         while tx_receipt is None:
             tx_receipt = w3.eth.getTransactionReceipt(txn_hash)
-            logging.info ('waiting for transaction to be mined')
-            time.sleep(10)
-        
+            logging.info('waiting for transaction to be mined')
+            time.sleep(0.1)
         tx_hash_str = str(txn_hash.hex())
         logging.info('txn hash = %s' % tx_hash_str)
         data = dict({'status':'ok','token_id': token_id, 'txn_hash':tx_hash_str})
@@ -250,7 +239,7 @@ def transaction_post ():
 
     except Exception as e:
         logging.error("Ouch Exception occurred", exc_info=True)
-        data = dict({'status':'failed','error':'settlement error check /app/tmp/orderlog'})
+        data = dict({'status':'failed','error':'settlement error check /tmp/orderlog'})
         return Response(json.dumps(data), mimetype='application/json')
 
 @app.route('/decrypt/<key>/<file_hash>')
@@ -269,4 +258,3 @@ if __name__ == '__main__':
     ssl = config(section='ssl')
     context = (ssl['cert'], ssl['key'])
     app.run(ssl_context=context,threaded=True)
-    #app.run(threaded=True)

@@ -2,26 +2,18 @@ FROM ubuntu:18.04
 
 MAINTAINER Bernard Lin "bernardlin@outlook.com"
 
-ENV DEBIAN_FRONTEND noninteractive
-ENV DEBCONF_NONINTERACTIVE_SEEN true
-
-RUN truncate -s0 /tmp/preseed.cfg; \
-    echo "tzdata tzdata/Areas select US" >> /tmp/preseed.cfg; \
-    echo "tzdata tzdata/Zones/US select New York" >> /tmp/preseed.cfg; \
-    debconf-set-selections /tmp/preseed.cfg && \
-    rm -f /etc/timezone /etc/localtime && \ 
-    apt-get update -y && \
+RUN apt-get update -y && \
     apt-get install -y && apt-get install -y software-properties-common && add-apt-repository ppa:deadsnakes/ppa && \
-    apt-get install -y python3.9 python3-pip python3.9-dev build-essential gunicorn3
+    apt-get install -y python3.7 python3-pip python3.7-dev build-essential gunicorn3
 
-RUN alias python=/usr/bin/python3.9
-COPY . /app
+RUN alias python=/usr/bin/python3.7
+
+COPY ./requirements.txt /app/requirements.txt
 
 WORKDIR /app
 
-RUN pip3 install ipfs-api && pip3 install -r requirements.txt
-RUN  pip3 install pycryptodome
+RUN pip3 install -r requirements.txt
+RUN  pip3 uninstall pycrypto && pip3 uninstall pycryptodome; pip3 install pycryptodome
+COPY . /app
 
-
-CMD ["gunicorn3","--certfile","godscoin_co.crt","--keyfile","godscoin_co.key2","-b","0.0.0.0:8082","app:app"]
-#CMD ["gunicorn3","-b","0.0.0.0:8082","app:app"]
+CMD ["gunicorn3","--certfile","certfile.crt","--keyfile","keyfile.key","-b","0.0.0.0:8082","app:app"]
