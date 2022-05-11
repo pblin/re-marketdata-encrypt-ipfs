@@ -177,7 +177,12 @@ def transaction_post ():
         signed = w3.eth.account.signTransaction(txn, private_key)
         txn_hash = w3.eth.sendRawTransaction(signed.rawTransaction)
         logging.info ("token mint: %s" % str(txn_hash.hex()))
-        tx_receipt = w3.eth.waitForTransactionReceipt(txn_hash,timeout=360)
+        time.sleep(20)
+        tx_receipt = w3.eth.getTransactionReceipt(txn_hash)
+        while tx_receipt is None:
+            tx_receipt = w3.eth.getTransactionReceipt(txn_hash)
+            logging.info ('waiting for transaction to be mined')
+            time.sleep(10)
         
         mint_event = token_contract.events.MintToken().processReceipt(tx_receipt)
         token_id = mint_event[0]['args']['_tokenId']
@@ -203,7 +208,13 @@ def transaction_post ():
             txn_hash = w3.eth.sendRawTransaction(signed_txn.rawTransaction)
             logging.info ('tranfer tx hash-> %s' % str(txn_hash.hex()))
             logging.info('waiting for transaction to be mined')
-            tx_receipt = w3.eth.waitforTransactionReceipt(txn_hash,timeout=360)
+            # wait 30 seconds before trying to get receipt
+            time.sleep(20)
+            tx_receipt = w3.eth.getTransactionReceipt(txn_hash)
+            while tx_receipt is None:
+                tx_receipt = w3.eth.getTransactionReceipt(txn_hash)
+                logging.info ('waiting for transaction to be mined')
+                time.sleep(10)
 
         # Transfer the data token from seller to buyer
         gas = token_contract.functions.purchaseWithFiat(token_id, 0, buyer_account).estimateGas(
@@ -218,14 +229,19 @@ def transaction_post ():
                                'gasPrice': w3.eth.gasPrice})
         logging.info ('seller account = %s' % seller_account)
         kv_path = str(seller_email.encode('utf-8').hex()) + '-1'
-        print (kv_path)
+        # print (kv_path)
         vault_key_query = vault_conn.secrets.kv.v1.read_secret(path=kv_path, mount_point='/secret')
         private_key = vault_key_query['data']['pk']
-        print (private_key)
+        # print (private_key)
         signed = w3.eth.account.signTransaction(txn, private_key)
         txn_hash = w3.eth.sendRawTransaction(signed.rawTransaction)
         logging.info ('waiting token transfer receipt = %s' % txn_hash)
-        tx_receipt = w3.eth.waitforTransactionReceipt(txn_hash,timeout=360)
+        time.sleep(20)
+        tx_receipt = w3.eth.getTransactionReceipt(txn_hash)
+        while tx_receipt is None:
+            tx_receipt = w3.eth.getTransactionReceipt(txn_hash)
+            logging.info ('waiting for transaction to be mined')
+            time.sleep(10)
         
         tx_hash_str = str(txn_hash.hex())
         logging.info('txn hash = %s' % tx_hash_str)
