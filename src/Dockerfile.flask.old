@@ -15,13 +15,14 @@ RUN truncate -s0 /tmp/preseed.cfg; \
     apt-get install -y python3.9 python3-pip python3.9-dev build-essential gunicorn3
 
 RUN alias python=/usr/bin/python3.9
-COPY . /app
+COPY ./app.py /app/app.py
+COPY ./requirements.txt /app/requirements.txt
 
 WORKDIR /app
 
 RUN pip3 install ipfs-api && pip3 install -r requirements.txt
 RUN  pip3 install pycryptodome
+COPY . /app
 
-
-CMD ["gunicorn3","--certfile","godscoin_co.crt","--keyfile","godscoin_co.key2","-b","0.0.0.0:8082","app:app"]
+CMD ["gunicorn3","--certfile","cert.pem","--keyfile","key.pem","-b","0.0.0.0:8082","app:app"]
 #CMD ["gunicorn3","-b","0.0.0.0:8082","app:app"]

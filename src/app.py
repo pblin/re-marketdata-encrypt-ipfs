@@ -21,7 +21,7 @@ app = Flask(__name__)
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                     datefmt='%m-%d %H:%M',
-                    filename='/app/tmp/settlement.log',
+                    filename='/tmp/settlement/settlement.log',
                     filemode='w')
 # define a Handler which writes INFO messages or higher to the sys.stderr
 console = logging.StreamHandler()
@@ -218,8 +218,10 @@ def transaction_post ():
                                'gasPrice': w3.eth.gasPrice})
         logging.info ('seller account = %s' % seller_account)
         kv_path = str(seller_email.encode('utf-8').hex()) + '-1'
+        print (kv_path)
         vault_key_query = vault_conn.secrets.kv.v1.read_secret(path=kv_path, mount_point='/secret')
         private_key = vault_key_query['data']['pk']
+        print (private_key)
         signed = w3.eth.account.signTransaction(txn, private_key)
         txn_hash = w3.eth.sendRawTransaction(signed.rawTransaction)
         logging.info ('waiting token transfer receipt = %s' % txn_hash)
